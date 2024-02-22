@@ -10,16 +10,16 @@ from tqdm import tqdm
 
 async def clean_paragraphs(doc):
     def process_para(para):
-        # Замена табов на пробелы
+        # Replace tabs with spaces
         para = re.sub(r'\t', ' ', para)
 
-        # Замена двойных пробелов после точки на одинарные
+        # Replace double spaces after a period with single spaces
         para = re.sub(r'\.  ', '. ', para)
 
-        # Замена пробелов перед запятыми, точками, тире и двоеточиями на ничего
+        # Remove spaces before commas, periods, dashes, and colons
         para = re.sub(r'\s([.,:;-])', r'\1', para)
 
-        # Удаление отступов, равных двум табам или более
+        # Remove indents equal to two tabs or more
         para = re.sub(r'\s{2,}', ' ', para)
 
         return para.strip()
@@ -28,17 +28,17 @@ async def clean_paragraphs(doc):
     for para in doc.paragraphs:
         para_text = process_para(para.text)
 
-        # Проверяем, является ли абзац разделителем подглавы
-        if re.match(r'\* \* \*', para_text) or re.match(r'ЧАСТЬ |ГЛАВА ', para_text.upper()):
+        # Check if the paragraph is a subchapter separator
+        if re.match(r'\* \* \*', para_text) or re.match(r'CHAPTER |PART ', para_text.upper()):
             para_text = f"\n{para_text}\n"
             paragraphs.append(para_text)
             continue
 
-        # Если текст абзаца не пустой и предыдущий абзац заканчивается на конечный символ предложения
+        # If the paragraph text is not empty and the previous paragraph ends with a sentence-ending punctuation mark
         if paragraphs and para_text and re.search(r'[.!?]$', paragraphs[-1]):
             paragraphs.append(para_text)
         else:
-            # Если это первый абзац или предыдущий абзац не заканчивается на конечный символ предложения, объединяем их
+            # If this is the first paragraph or the previous paragraph does not end with a sentence-ending punctuation mark, concatenate them
             if paragraphs:
                 paragraphs[-1] = f"{paragraphs[-1]} {para_text}".strip()
             else:
@@ -112,7 +112,6 @@ class App(QWidget):
     def __init__(self):
         super().__init__()
 
-        # Создаем элементы интерфейса
         self.input_label = QLabel('Input file:')
         self.input_field = QLineEdit()
         self.input_button = QPushButton('Browse')
@@ -121,7 +120,6 @@ class App(QWidget):
         self.output_button = QPushButton('Browse')
         self.format_button = QPushButton('Format')
 
-        # Организуем элементы интерфейса в компоновщики
         input_layout = QHBoxLayout()
         input_layout.addWidget(self.input_label)
         input_layout.addWidget(self.input_field)
@@ -138,29 +136,24 @@ class App(QWidget):
         main_layout.addLayout(button_layout)
         self.setLayout(main_layout)
 
-        # Подключаем обработчики событий
         self.input_button.clicked.connect(self.browse_input)
         self.output_button.clicked.connect(self.browse_output)
         self.format_button.clicked.connect(self.format_doc)
 
     def browse_input(self):
-        # Открываем диалог выбора файла для выбора входного файла
         file_path, _ = QFileDialog.getOpenFileName(self, 'Open Document', '', 'Word Document (*.docx)')
         if file_path:
             self.input_field.setText(file_path)
 
-    def browse_output(self):
-        # Открываем диалог выбора файла для выбора выходного файла
+    def browse_output(self):    
         file_path, _ = QFileDialog.getSaveFileName(self, 'Save Document', '', 'Word Document (*.docx)')
         if file_path:
             self.output_field.setText(file_path)
 
     def format_doc(self):
-        # Получаем пути к входному и выходному файлам
         input_path = self.input_field.text()
         output_path = self.output_field.text()
 
-        # Запускаем функцию format_docx в асинхронном режиме
         loop = asyncio.get_event_loop()
         loop.run_until_complete(format_docx(input_path, output_path))
 
